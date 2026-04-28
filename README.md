@@ -1,4 +1,4 @@
-EXTENSION GIÚP BẠN LẤY STICKER ZALO TRÊN WEB VỀ MÁY TÍNH THÀNH FILE GIF
+EXTENSION GIÚP BẠN LẤY STICKER ĐỘNG TRÊN ZALO WEB VỀ MÁY TÍNH THÀNH FILE GIF
 ## Cài đặt extension
 
 ### Bước 1: Mở trang quản lý extension
