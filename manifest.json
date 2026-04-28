@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Zalo Sticker to GIF",
+  "version": "0.1.0",
+  "description": "Quét sticker trên Zalo Web và tải về thành GIF.",
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "host_permissions": [
+    "https://chat.zalo.me/*",
+    "https://id.zalo.me/*",
+    "https://*.zalo.me/*",
+    "https://*.zadn.vn/*",
+    "https://*.zascdn.me/*",
+    "https://*.zaloapp.com/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Zalo Sticker to GIF",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chat.zalo.me/*", "https://*.zalo.me/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-bridge.js"],
+      "matches": ["https://chat.zalo.me/*", "https://*.zalo.me/*"]
+    }
+  ]
+}

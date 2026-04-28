@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zalo Sticker to GIF</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        width: 360px;
+        padding: 12px;
+        background: #f6f8fb;
+        color: #172033;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+
+      .panel {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 12px;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .row:last-child {
+        margin-bottom: 0;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        background: #0a68ff;
+        color: #fff;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      button.secondary {
+        background: #e8eefc;
+        color: #1841a3;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 4px;
+        color: #4c5b7a;
+      }
+
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #ced6e5;
+      }
+
+      #packName {
+        font-weight: 700;
+      }
+
+      #status {
+        font-size: 12px;
+        color: #4c5b7a;
+        min-height: 18px;
+      }
+
+      #results {
+        max-height: 280px;
+        overflow: auto;
+        display: grid;
+        gap: 8px;
+      }
+
+      .selection-row {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #4c5b7a;
+      }
+
+      .selection-row.visible {
+        display: flex;
+      }
+
+      .selection-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+        color: #172033;
+        font-weight: 600;
+      }
+
+      .selection-toggle input {
+        width: auto;
+        margin: 0;
+      }
+
+      #selectedCount {
+        white-space: nowrap;
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: auto 72px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        background: #f8faff;
+        border: 1px solid #e3e9f5;
+        border-radius: 10px;
+        padding: 8px;
+      }
+
+      .item-checkbox {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+      }
+
+      .thumb {
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 8px;
+      }
+
+      .thumb-wrap {
+        width: 72px;
+        height: 72px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: linear-gradient(45deg, #eef2f9 25%, transparent 25%), linear-gradient(-45deg, #eef2f9 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eef2f9 75%), linear-gradient(-45deg, transparent 75%, #eef2f9 75%);
+        background-size: 10px 10px;
+        background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+      }
+
+      .thumb-canvas {
+        width: 72px;
+        height: 72px;
+        display: none;
+        border-radius: 8px;
+      }
+
+      .thumb-wrap.sprite-ready .thumb {
+        display: none;
+      }
+
+      .thumb-wrap.sprite-ready .thumb-canvas {
+        display: block;
+      }
+
+      .thumb-wrap .thumb,
+      .thumb-wrap .thumb-canvas {
+        flex: none;
+      }
+
+      .thumb-wrap .thumb {
+        background: transparent;
+      }
+
+      .thumb-wrap .thumb-canvas {
+        background: transparent;
+      }
+
+      .thumb-wrap.is-sprite {
+        padding: 0;
+      }
+
+      .thumb-wrap.is-sprite .thumb {
+        object-fit: cover;
+        object-position: center;
+      }
+
+      .thumb-wrap.is-sprite .thumb.sprite-fallback {
+        display: block;
+      }
+
+      .thumb-wrap.sprite-ready.is-sprite .thumb.sprite-fallback {
+        display: none;
+      }
+
+      .thumb-wrap.sprite-ready.is-sprite .thumb-canvas {
+        display: block;
+      }
+
+      .thumb-wrap .thumb-canvas.rendered {
+        display: block;
+      }
+
+      .thumb-wrap .thumb-canvas.hidden {
+        display: none;
+      }
+
+      .thumb-wrap .thumb.visible {
+        display: block;
+      }
+
+      .thumb-wrap .thumb.hidden {
+        display: none;
+      }
+
+      .thumb-wrap .thumb.preview-image {
+        object-fit: cover;
+        object-position: center;
+      }
+
+      .thumb-wrap .thumb.preview-image.contain {
+        object-fit: contain;
+      }
+
+      .thumb-wrap .thumb.preview-image.cover {
+        object-fit: cover;
+      }
+      .meta {
+        min-width: 0;
+      }
+
+      .meta strong,
+      .meta span {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .meta span {
+        font-size: 11px;
+        color: #5f6d8a;
+      }
+
+      .inline-btn {
+        flex: none;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      #debugMeta {
+        font-size: 12px;
+        color: #4c5b7a;
+        margin-bottom: 8px;
+      }
+
+      #debugList {
+        max-height: 140px;
+        overflow: auto;
+        display: grid;
+        gap: 6px;
+      }
+
+      .debug-item {
+        font-size: 11px;
+        color: #5f6d8a;
+        background: #f8faff;
+        border: 1px solid #e3e9f5;
+        border-radius: 8px;
+        padding: 6px 8px;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Zalo Sticker to GIF</h1>
+
+    <div class="panel">
+      <div class="row">
+        <button id="scanBtn" type="button">Quét pack</button>
+        <button id="downloadAllBtn" type="button" class="secondary">Tải đã chọn</button>
+      </div>
+      <div class="row">
+        <div style="flex: 1">
+          <label for="durationInput">Duration mỗi frame (ms)</label>
+          <input id="durationInput" type="number" min="20" step="10" value="100" />
+        </div>
+        <div style="flex: 1">
+          <label for="frameSizeInput">Kích thước frame fallback</label>
+          <input id="frameSizeInput" type="number" min="16" step="1" value="130" />
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div id="packName">Chưa quét pack</div>
+      <div id="status">Mở Zalo Web và chọn bộ sticker trước khi quét.</div>
+    </div>
+
+    <div id="selectionRow" class="selection-row">
+      <label class="selection-toggle" for="selectAllCheckbox">
+        <input id="selectAllCheckbox" type="checkbox" />
+        <span>Chọn tất cả</span>
+      </label>
+      <div id="selectedCount">Đã chọn 0/0</div>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
