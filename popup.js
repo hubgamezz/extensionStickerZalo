@@ -6,6 +6,9 @@ const packNameEl = document.getElementById("packName");
 const statusEl = document.getElementById("status");
 const selectionRowEl = document.getElementById("selectionRow");
 const selectAllCheckboxEl = document.getElementById("selectAllCheckbox");
+const filterAllBtn = document.getElementById("filterAllBtn");
+const filterAnimatedBtn = document.getElementById("filterAnimatedBtn");
+const filterStaticBtn = document.getElementById("filterStaticBtn");
 const selectedCountEl = document.getElementById("selectedCount");
 const resultsEl = document.getElementById("results");
 const debugMetaEl = document.getElementById("debugMeta");
@@ -13,30 +16,94 @@ const debugListEl = document.getElementById("debugList");
 
 let currentScanResult = null;
 let selectedStickerKeys = new Set();
+let currentFilter = "all";
 
 scanBtn.addEventListener("click", handleScan);
 downloadAllBtn.addEventListener("click", handleDownloadAll);
 selectAllCheckboxEl.addEventListener("change", handleToggleSelectAll);
+filterAllBtn.addEventListener("click", () => applyFilter("all"));
+filterAnimatedBtn.addEventListener("click", () => applyFilter("animated"));
+filterStaticBtn.addEventListener("click", () => applyFilter("static"));
+
+function matchesCurrentFilter(sticker) {
+  if (currentFilter === "animated") {
+    return isAnimatedSticker(sticker);
+  }
+
+  if (currentFilter === "static") {
+    return !isAnimatedSticker(sticker);
+  }
+
+  return true;
+}
+
+function getVisibleStickers() {
+  return (currentScanResult?.stickers || []).filter((sticker) => matchesCurrentFilter(sticker));
+}
+
+function updateFilterButtons() {
+  filterAllBtn.classList.toggle("active", currentFilter === "all");
+  filterAnimatedBtn.classList.toggle("active", currentFilter === "animated");
+  filterStaticBtn.classList.toggle("active", currentFilter === "static");
+}
+
+function applyFilter(filter) {
+  currentFilter = filter;
+
+  if (currentScanResult) {
+    selectFilteredStickers();
+    renderScanResult(currentScanResult);
+  }
+
+  updateFilterButtons();
+  syncSelectedCount();
+}
+
+function selectVisibleStickers() {
+  for (const sticker of getVisibleStickers()) {
+    selectedStickerKeys.add(getStickerKey(sticker));
+  }
+}
+
+function clearVisibleStickers() {
+  const visibleKeys = new Set(getVisibleStickers().map((sticker) => getStickerKey(sticker)));
+  selectedStickerKeys = new Set([...selectedStickerKeys].filter((key) => !visibleKeys.has(key)));
+}
+
+function updateSelectedSummary(selected, total, visibleSelected, visibleTotal) {
+  if (visibleTotal !== total) {
+    selectedCountEl.textContent = `Đã chọn ${visibleSelected}/${visibleTotal} (hiển thị) • Tổng ${selected}/${total}`;
+    return;
+  }
+
+  selectedCountEl.textContent = `Đã chọn ${selected}/${total}`;
+}
+
+updateFilterButtons();
 
 function getStickerKey(sticker) {
   return sticker?.id || sticker?.url || "";
 }
 
 function syncSelectedCount() {
-  const total = currentScanResult?.stickers?.length || 0;
-  const selected = currentScanResult?.stickers?.filter((sticker) => selectedStickerKeys.has(getStickerKey(sticker))).length || 0;
+  const stickers = currentScanResult?.stickers || [];
+  const visibleStickers = getVisibleStickers();
+  const total = stickers.length;
+  const selected = stickers.filter((sticker) => selectedStickerKeys.has(getStickerKey(sticker))).length;
+  const visibleTotal = visibleStickers.length;
+  const visibleSelected = visibleStickers.filter((sticker) => selectedStickerKeys.has(getStickerKey(sticker))).length;
 
   selectionRowEl.classList.toggle("visible", total > 0);
-  selectedCountEl.textContent = `Đã chọn ${selected}/${total}`;
+  updateSelectedSummary(selected, total, visibleSelected, visibleTotal);
 
-  if (!total) {
+  if (!visibleTotal) {
     selectAllCheckboxEl.checked = false;
     selectAllCheckboxEl.indeterminate = false;
     return;
   }
 
-  selectAllCheckboxEl.checked = selected === total;
-  selectAllCheckboxEl.indeterminate = selected > 0 && selected < total;
+  selectAllCheckboxEl.checked = visibleSelected === visibleTotal;
+  selectAllCheckboxEl.indeterminate = visibleSelected > 0 && visibleSelected < visibleTotal;
 }
 
 function selectAllStickers() {
@@ -44,18 +111,28 @@ function selectAllStickers() {
   syncSelectedCount();
 }
 
+function selectFilteredStickers() {
+  selectedStickerKeys.clear();
+  selectVisibleStickers();
+  syncSelectedCount();
+}
+
+function resetFilter() {
+  currentFilter = "all";
+  updateFilterButtons();
+}
 function handleToggleSelectAll() {
   if (!currentScanResult?.stickers?.length) {
     return;
   }
 
   if (selectAllCheckboxEl.checked) {
-    selectAllStickers();
+    selectVisibleStickers();
   } else {
-    selectedStickerKeys.clear();
-    syncSelectedCount();
+    clearVisibleStickers();
   }
 
+  syncSelectedCount();
   renderScanResult(currentScanResult);
 }
 
@@ -86,7 +163,7 @@ function toggleStickerSelection(sticker, isSelected) {
 
 async function handleScan() {
   setBusy(true);
-  setStatus("Đang quét pack sticker hiện tại...");
+  setStatus("Đang quét pack sticker hiện tại và bắt thêm sticker động...");
 
   try {
     const tab = await getActiveTab();
@@ -98,6 +175,7 @@ async function handleScan() {
     }
 
     currentScanResult = response.result;
+    resetFilter();
     selectAllStickers();
     renderScanResult(currentScanResult);
     renderDebug(observedResponse?.result || { total: 0, bySource: {}, items: [] });
@@ -128,7 +206,7 @@ async function handleDownloadAll() {
   }
 
   setBusy(true);
-  setStatus(`Đang tạo GIF cho ${selectedStickers.length} sticker đã chọn...`);
+  setStatus(`Đang tải ${selectedStickers.length} sticker đã chọn...`);
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -165,6 +243,7 @@ function renderScanResult(scanResult) {
   for (const sticker of scanResult.stickers) {
     const item = document.createElement("div");
     item.className = "item";
+    item.classList.toggle("hidden", !matchesCurrentFilter(sticker));
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -184,7 +263,7 @@ function renderScanResult(scanResult) {
 
     thumbWrap.appendChild(thumb);
 
-    if (isSpriteUrl(sticker.url)) {
+    if (isAnimatedSticker(sticker)) {
       thumbWrap.classList.add("is-sprite");
       thumb.classList.add("sprite-fallback");
 
@@ -200,12 +279,14 @@ function renderScanResult(scanResult) {
 
     const meta = document.createElement("div");
     meta.className = "meta";
-    meta.innerHTML = `<strong>${escapeHtml(sticker.displayName || sticker.name)}</strong><span>${escapeHtml(sticker.url)}</span>`;
+    const kindLabel = isAnimatedSticker(sticker) ? "Sticker động" : "Sticker tĩnh";
+    const kindClass = isAnimatedSticker(sticker) ? "animated" : "static";
+    meta.innerHTML = `<strong>${escapeHtml(sticker.displayName || sticker.name)}</strong><span>${escapeHtml(sticker.url)}</span><span class="item-kind ${kindClass}">${kindLabel}</span>`;
 
     const button = document.createElement("button");
     button.className = "inline-btn secondary";
     button.type = "button";
-    button.textContent = "Tải GIF";
+    button.textContent = isAnimatedSticker(sticker) ? "Tải GIF" : "Tải PNG";
     button.addEventListener("click", () => handleDownloadOne(sticker));
 
     item.append(checkbox, thumbWrap, meta, button);
@@ -213,8 +294,8 @@ function renderScanResult(scanResult) {
   }
 }
 
-function isSpriteUrl(url) {
-  return String(url || "").includes("/sprite?");
+function isAnimatedSticker(sticker) {
+  return sticker?.kind === "animated" || String(sticker?.url || "").includes("/sprite?");
 }
 
 async function renderSpritePreview(canvas, thumbWrap, sticker) {
@@ -243,7 +324,7 @@ async function renderSpritePreview(canvas, thumbWrap, sticker) {
 
 async function handleDownloadOne(sticker) {
   setBusy(true);
-  setStatus(`Đang tạo GIF cho ${sticker.name}...`);
+  setStatus(`Đang tải ${sticker.name}...`);
 
   try {
     const response = await chrome.runtime.sendMessage({

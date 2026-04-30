@@ -102,6 +102,67 @@
         margin-bottom: 12px;
         font-size: 12px;
         color: #4c5b7a;
+        flex-wrap: wrap;
+      }
+
+      .selection-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .filter-group {
+        display: inline-flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .filter-btn {
+        border: 1px solid #d8e1f2;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: #ffffff;
+        color: #4c5b7a;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .filter-btn.active {
+        background: #e8eefc;
+        color: #1841a3;
+        border-color: #c7d7ff;
+      }
+
+      .selection-summary {
+        margin-left: auto;
+        white-space: nowrap;
+      }
+
+      .item.hidden {
+        display: none;
+      }
+
+      .item-kind {
+        display: inline-block;
+        margin-top: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #4c5b7a;
+        background: #eef3ff;
+        border-radius: 999px;
+        padding: 2px 6px;
+      }
+
+      .item-kind.animated {
+        color: #1841a3;
+        background: #e8eefc;
+      }
+
+      .item-kind.static {
+        color: #7b4b00;
+        background: #fff3dd;
       }
 
       .selection-row.visible {
@@ -314,13 +375,19 @@
     </div>
 
     <div id="selectionRow" class="selection-row">
-      <label class="selection-toggle" for="selectAllCheckbox">
-        <input id="selectAllCheckbox" type="checkbox" />
-        <span>Chọn tất cả</span>
-      </label>
-      <div id="selectedCount">Đã chọn 0/0</div>
+      <div class="selection-actions">
+        <label class="selection-toggle" for="selectAllCheckbox">
+          <input id="selectAllCheckbox" type="checkbox" />
+          <span>Chọn tất cả</span>
+        </label>
+        <div class="filter-group">
+          <button id="filterAllBtn" type="button" class="filter-btn active">Tất cả</button>
+          <button id="filterAnimatedBtn" type="button" class="filter-btn">Sticker động</button>
+          <button id="filterStaticBtn" type="button" class="filter-btn">Sticker tĩnh</button>
+        </div>
+      </div>
+      <div id="selectedCount" class="selection-summary">Đã chọn 0/0</div>
     </div>
-
     <div id="results"></div>
 
     <script type="module" src="popup.js"></script>

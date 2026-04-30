@@ -1,6 +1,6 @@
 import { buildUniqueFilename } from "./lib/naming.js";
 import { buildGifBlob } from "./lib/gif.js";
-import { extractFramesFromSprite } from "./lib/sprite.js";
+import { extractFramesFromSprite, imageBlobToPngBlob } from "./lib/sprite.js";
 
 const sessionNames = new Set();
 
@@ -38,6 +38,14 @@ async function downloadPack(payload) {
 }
 
 async function downloadSticker(payload) {
+  if (payload?.sticker?.kind === "static") {
+    return downloadStaticSticker(payload);
+  }
+
+  return downloadAnimatedSticker(payload);
+}
+
+async function downloadAnimatedSticker(payload) {
   const { packName, sticker, duration = 100, fallbackFrameSize = 130 } = payload;
 
   if (!sticker?.url) {
@@ -58,8 +66,35 @@ async function downloadSticker(payload) {
   }
 
   const gifBlob = await buildGifBlob(frames, Number(duration) || 100, 0);
-  const fileName = buildUniqueFilename(packName, sticker.name, sessionNames);
+  const fileName = buildUniqueFilename(packName, sticker.name, sessionNames, "gif");
   const dataUrl = await blobToDataUrl(gifBlob);
+
+  const downloadId = await chrome.downloads.download({
+    url: dataUrl,
+    filename: fileName,
+    saveAs: false,
+    conflictAction: "uniquify",
+  });
+
+  return { downloadId, fileName };
+}
+
+async function downloadStaticSticker(payload) {
+  const { packName, sticker } = payload;
+
+  if (!sticker?.url) {
+    throw new Error("Sticker không có URL ảnh để tải.");
+  }
+
+  const response = await fetch(sticker.url, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error(`Tải ảnh sticker thất bại: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const pngBlob = await imageBlobToPngBlob(blob);
+  const fileName = buildUniqueFilename(packName, sticker.name, sessionNames, "png");
+  const dataUrl = await blobToDataUrl(pngBlob);
 
   const downloadId = await chrome.downloads.download({
     url: dataUrl,
