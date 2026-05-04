@@ -229,4 +229,3 @@ Cách xử lý:
 - [lib/naming.js](lib/naming.js) — đặt tên file tải về
 - [vendor/omggif-esm.js](vendor/omggif-esm.js) — ESM wrapper cho `omggif`
 - [vendor/omggif.js](vendor/omggif.js) — thư viện GIF encoder/decoder vendor
-- ok
